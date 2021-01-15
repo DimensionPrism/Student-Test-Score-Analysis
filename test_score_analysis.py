@@ -809,48 +809,6 @@ SCHOOL_NAME = []
 [SCHOOL_NAME.append(x) for x in STUDENT_TOTAL['学校'] if x not in SCHOOL_NAME]
 
 
-class Effective_Score:
-    def __init__(self, total_score, full_score, subject_list):
-        self.score_line = [462, 430.7, 404.5, 371.1, 302.9]
-        self.full_score = full_score
-        self.total_score = total_score
-        self.subject_list = subject_list
-        all_stu_total = total_score['分数.7']
-
-        block_one_stu = total_score.where(total_score['分数.7'] >= self.score_line[0]).dropna()
-        self.b1_stu = len(block_one_stu)
-        self.b1_ave = block_one_stu['分数.7'].mean()
-        self.b1_co = self.score_line[0] / self.b1_ave
-
-        block_two_stu = total_score.where(total_score['分数.7'] >= self.score_line[1]).dropna()
-        self.b2_stu = len(block_two_stu)
-        self.b2_ave = block_two_stu['分数.7'].mean()
-        self.b2_co = self.score_line[1] / self.b2_ave
-
-        block_three_stu = total_score.where(total_score['分数.7'] >= self.score_line[2]).dropna()
-
-        self.b3_stu = len(block_three_stu)
-        self.b3_ave = block_three_stu['分数.7'].mean()
-        self.b3_co = self.score_line[2] / self.b3_ave
-
-        block_four_stu = total_score.where(total_score['分数.7'] >= self.score_line[3]).dropna()
-        self.b4_stu = len(block_four_stu)
-        self.b4_ave = block_four_stu['分数.7'].mean()
-        self.b4_co = self.score_line[3] / self.b4_ave
-
-        block_five_stu = total_score.where(total_score['分数.7'] >= self.score_line[4]).dropna()
-        self.b5_stu = len(block_five_stu)
-        self.b5_ave = block_five_stu['分数.7'].mean()
-        self.b5_co = self.score_line[4] / self.b5_ave
-
-    def subject_ES(self):
-        for score in self.total_score[1:8]:
-
-
-        return None
-
-
-
 class Score_situaiton:
     def __init__(self, school, total_score):
         self.school_name = school
@@ -1036,6 +994,46 @@ class Score_situaiton:
 
     def score_rate(self):
         return self.dict_of_score_rate
+
+    def rank(self):
+        rank_dict = {}
+        score_block = []
+        for x in range(0, 100, 5):
+            score_block.append("[{}, {})".format(str(x), str(x+5)))
+        score_block.append("[100, *]")
+        score_block.reverse()
+        score_block.append("人数")
+
+        for score in self.score_list[1:8]:
+            index = self.score_list.index(score) - 1
+            subject_name = SUBJECT_LIST[index]
+
+            subject_dict = {"分数段": score_block}
+
+            for school in self.school_name:
+                school_data = []
+                this_school = self.score.groupby("学校").get_group(school)
+
+                for x in range(0, 100, 5):
+                    left_bound = this_school.where(this_school[score] >= x).dropna()
+                    right_bound = left_bound.where(left_bound[score] >= x+5).dropna()
+                    if len(right_bound) == 0:
+                        school_data.append(np.nan)
+                    else:
+                        school_data.append(len(right_bound))
+                left_bound = this_school.where(this_school[score] >= 100).dropna()
+                if len(left_bound) == 0:
+                    school_data.append(np.nan)
+                else:
+                    school_data.append(len(left_bound))
+                school_data.reverse()
+                school_data.append(len(this_school))
+                subject_dict[school] = school_data
+
+            subject_df = pd.DataFrame(subject_dict)
+            rank_dict[subject_name] = subject_df
+
+        return rank_dict
 
 
 class Analysis:
@@ -1412,6 +1410,159 @@ def subject_to_dataframe():
     return output
 
 
+class Effective_Score:
+    def __init__(self, school, total_score, full_score, subject_list):
+        self.score_line = [462, 430.7, 404.5, 371.1, 302.9]
+        self.school_name = school
+        self.full_score = full_score
+        self.total_score = total_score
+        self.score_list = list(total_score.columns)
+        self.subject_list = subject_list
+        all_stu_total = total_score['分数.7']
+
+        block_one_stu = total_score.where(total_score['分数.7'] >= self.score_line[0]).dropna()
+        self.b1_stu = len(block_one_stu)
+        self.b1_ave = block_one_stu['分数.7'].mean()
+        self.b1_co = self.score_line[0] / self.b1_ave
+
+        block_two_stu = total_score.where(total_score['分数.7'] >= self.score_line[1]).dropna()
+        self.b2_stu = len(block_two_stu)
+        self.b2_ave = block_two_stu['分数.7'].mean()
+        self.b2_co = self.score_line[1] / self.b2_ave
+
+        block_three_stu = total_score.where(total_score['分数.7'] >= self.score_line[2]).dropna()
+
+        self.b3_stu = len(block_three_stu)
+        self.b3_ave = block_three_stu['分数.7'].mean()
+        self.b3_co = self.score_line[2] / self.b3_ave
+
+        block_four_stu = total_score.where(total_score['分数.7'] >= self.score_line[3]).dropna()
+        self.b4_stu = len(block_four_stu)
+        self.b4_ave = block_four_stu['分数.7'].mean()
+        self.b4_co = self.score_line[3] / self.b4_ave
+
+        block_five_stu = total_score.where(total_score['分数.7'] >= self.score_line[4]).dropna()
+        self.b5_stu = len(block_five_stu)
+        self.b5_ave = block_five_stu['分数.7'].mean()
+        self.b5_co = self.score_line[4] / self.b5_ave
+
+        self.co_list = [self.b1_co, self.b2_co, self.b3_co, self.b4_co, self.b5_co]
+
+        self.subject_above_rate = {}
+
+    def subject_ES(self):
+        score_line_dict = {}
+        for score_line in self.score_line:
+            score_line_index = self.score_line.index(score_line)
+
+            total = []
+            single = []
+            double = []
+            hit_rate = []
+            contribution_rate = []
+
+            for score in self.score_list[1:8]:
+                score_list_index = self.score_list.index(score) - 1
+                subject_name = SUBJECT_LIST[score_list_index]
+                full_score = FULL_SCORE[score_list_index]
+
+                subject_dict = {}
+                subject_total = []
+                subject_single = []
+                subject_double = []
+                subject_hit_rate = []
+                subject_contribution_rate = []
+
+                for school in self.school_name:
+                    this_school = self.total_score.groupby("学校").get_group(school)
+                    above_line = this_school.where(this_school['分数.7'] >= score_line).dropna()
+
+                    total_above_line = len(above_line)
+                    subject_total.append(total_above_line)
+
+                    this_subject = above_line[score]
+                    average = this_subject.mean()
+                    subject_effect = average * self.co_list[score_line_index]
+
+                    this_school_single = this_school.where(this_school[score] >= subject_effect).dropna()
+                    num_single = len(this_school_single)
+                    subject_single.append(num_single)
+
+                    this_school_double = this_subject.where(this_subject >= subject_effect).dropna()
+                    num_double = len(this_school_double)
+                    subject_double.append(num_double)
+
+                    if num_single == 0:
+                        this_school_hit = 0
+                    else:
+                        this_school_hit = num_double / num_single
+                    subject_hit_rate.append(np.round(this_school_hit*100, 1))
+                    if total_above_line == 0:
+                        this_school_contribution = 0
+                    else:
+                        this_school_contribution = num_double / total_above_line
+                    subject_contribution_rate.append(np.round(this_school_contribution*100, 1))
+
+                subject_dict["学校"] = self.school_name
+                subject_dict["上线人数"] = subject_single
+                subject_df = pd.DataFrame(subject_dict)
+                self.subject_above_rate[subject_name] = subject_df
+
+                above_line = self.total_score.where(self.total_score['分数.7'] >= score_line).dropna()
+                total_above_line = len(above_line)
+
+                subject_total.append(total_above_line)
+
+                this_subject = above_line[score]
+                average = this_subject.mean()
+                subject_effect = average * self.co_list[score_line_index]
+
+                this_school_single = self.total_score.where(self.total_score[score] >= subject_effect).dropna()
+                num_single = len(this_school_single)
+                subject_single.append(num_single)
+
+                this_school_double = this_subject.where(this_subject >= subject_effect).dropna()
+                num_double = len(this_school_double)
+                subject_double.append(num_double)
+
+                if num_single == 0:
+                    this_school_hit = 0
+                else:
+                    this_school_hit = num_double / num_single
+                subject_hit_rate.append(np.round(this_school_hit * 100, 1))
+                if total_above_line == 0:
+                    this_school_contribution = 0
+                else:
+                    this_school_contribution = num_double / total_above_line
+                subject_contribution_rate.append(np.round(this_school_contribution * 100, 1))
+
+                total.append(subject_total)
+                single.append(subject_single)
+                double.append(subject_double)
+                hit_rate.append(subject_hit_rate)
+                contribution_rate.append(subject_contribution_rate)
+
+            this_goal_dict = {}
+            school_name = self.school_name.copy()
+            school_name.append("全体")
+            this_goal_dict["学校"] = school_name
+            for index in range(len(SUBJECT_LIST)-1):
+                this_subject = SUBJECT_LIST[index]
+                this_goal_dict["总分上线人数"] = total[index]
+                this_goal_dict[this_subject+"单上线"] = single[index]
+                this_goal_dict[this_subject + "双上线"] = double[index]
+                this_goal_dict[this_subject + "命中率"] = hit_rate[index]
+                this_goal_dict[this_subject + "贡献率"] = contribution_rate[index]
+
+            this_goal_df = pd.DataFrame(this_goal_dict)
+            score_line_dict[str(score_line)] = this_goal_df
+
+        return score_line_dict
+
+    def distribution_graph(self):
+        return self.subject_above_rate
+
+
 if __name__ == "__main__":
     summary_output = {}
     target_output = {}
@@ -1433,6 +1584,10 @@ if __name__ == "__main__":
     print("分数线预测计算完成")
     score_block_analysis = analysis.score_block_analysis()
     print("分数段分布表计算完成")
+    effective_score = Effective_Score(SCHOOL_NAME, TOTAL_SCORE, FULL_SCORE, SUBJECT_LIST)
+    effect_score_dict = effective_score.subject_ES()
+    above_rate_graph = effective_score.distribution_graph()
+    print("上线率计算完成")
 
     for x in range(0, 7):
         analysis = Analysis(FULL_SCORE[x], SUBJECT_TOTAL_LIST[x])
@@ -1446,6 +1601,8 @@ if __name__ == "__main__":
     print("各学校得分情况（科目）计算完成\n")
     score_rate = situation.score_rate()
     print("各学校得分率分布图（科目）计算完成\n")
+    subject_score_block = situation.rank()
+    print("各校分数段人数统计计算完成（科目）")
 
     with pd.ExcelWriter(export_data_path+"学校得分率分布图（科目）.xlsx", engine='xlsxwriter') as writer:
         for each in score_rate.keys():
@@ -1469,6 +1626,10 @@ if __name__ == "__main__":
             chart.set_y_axis({'name': '得分率'})
             chart.set_size({'width': 1080, 'height': 864})
             worksheet.insert_chart('D2', chart)
+
+    with pd.ExcelWriter(export_data_path+"2-1-4-3各校分数段人数统计.xlsx", engine='xlsxwriter') as writer:
+        for subject in subject_score_block.keys():
+            subject_score_block[subject].to_excel(writer, index=False, sheet_name=subject)
 
     for x in range(0, 7):
         subject = Exam(ITEM_SCORE, SUBJECT_TOTAL_LIST[x], SUBJECT_PROB_TOTAL[x], SUBJECT_LIST[x], FULL_SCORE[x])
@@ -1522,24 +1683,24 @@ if __name__ == "__main__":
                 worksheet.insert_chart('D2', chart)
         print(SUBJECT_LIST[x]+"分段小题难度输出完成\n")
 
-    with pd.ExcelWriter(export_data_path+"学校得分情况（科目）.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1-4-1学校得分情况（科目）.xlsx", engine='xlsxwriter') as writer:
         for each in situ_stats.keys():
             situ_stats[each].to_excel(writer, index=False, sheet_name=each)
     print("学校得分情况（科目）输出完成")
-    with pd.ExcelWriter(export_data_path+"学校得分情况（总分）.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"1-3-2学校得分情况（总分）.xlsx", engine='xlsxwriter') as writer:
         school_analysis.to_excel(writer, index=False)
     print("学校得分情况（总分）输出完成")
-    with pd.ExcelWriter(export_data_path+"分数线预测.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"1-4分数线预测.xlsx", engine='xlsxwriter') as writer:
         score_line_analysis.to_excel(writer, index=False)
     print("分数线预测输出完成")
-    with pd.ExcelWriter(export_data_path + "分数段分布表.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path + "1-5-2分数段分布表.xlsx", engine='xlsxwriter') as writer:
         score_block_analysis.to_excel(writer, index=False)
     print("分数段分布表输出完成")
-    with pd.ExcelWriter(export_data_path+"科目得分情况.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"1-3-1科目得分情况.xlsx", engine='xlsxwriter') as writer:
         subject_analysis.to_excel(writer, index=False)
     print("科目得分情况输出完成")
 
-    with pd.ExcelWriter(export_data_path+"题目指标.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1-3-1题目指标.xlsx", engine='xlsxwriter') as writer:
         for each in target_output.keys():
             target_output[each].to_excel(writer, index=False, sheet_name=each)
             workbook = writer.book
@@ -1564,14 +1725,38 @@ if __name__ == "__main__":
             worksheet.insert_chart('N2', chart)
     print("题目指标输出完成")
 
-    with pd.ExcelWriter(export_data_path+"概况.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1概况.xlsx", engine='xlsxwriter') as writer:
         for summary in summary_output.keys():
             summary_output[summary].to_excel(writer, sheet_name=summary, index=False)
     print("概括输出完成")
-    with pd.ExcelWriter(export_data_path+"题型分析.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1-2-4题型分析.xlsx", engine='xlsxwriter') as writer:
         for structure in structure_summary.keys():
             structure_summary[structure].to_excel(writer, sheet_name=structure, index=False)
     print("题型分析输出完成")
+    with pd.ExcelWriter(export_data_path+"2-2-5单科上线命中率及贡献率.xlsx", engine='xlsxwriter') as writer:
+        for score_line in effect_score_dict.keys():
+            effect_score_dict[score_line].to_excel(writer, index=False, sheet_name=score_line)
+    print("上线率输出完成")
+    with pd.ExcelWriter(export_data_path+"2-2-3学科上线分数对比各校分布图.xlsx", engine='xlsxwriter') as writer:
+        for subject in above_rate_graph.keys():
+            above_rate_graph[subject].to_excel(writer, index=False, sheet_name=subject)
+            workbook = writer.book
+            worksheet = writer.sheets[subject]
+            chart = workbook.add_chart({'type': 'column'})
+            max_row = len(above_rate_graph[subject])
+            col_x = above_rate_graph[subject].columns.get_loc('学校')
+            col_y = above_rate_graph[subject].columns.get_loc('上线人数')
 
-    #effective_score = Effective_Score(TOTAL_SCORE, FULL_SCORE, SUBJECT_LIST)
+            chart.add_series({
+                'name': '上线人数',
+                'categories': [subject, 1, col_x, max_row, col_x],
+                'values': [subject, 1, col_y, max_row, col_y],
+                'data_labels': {'value': True},
+            })
 
+            chart.set_title({'name': subject + "单科上线各校分布图"})
+            chart.set_x_axis({'name': '学校', 'text_axis': True})
+            chart.set_y_axis({'name': '上线人数'})
+            chart.set_size({'width': 1080, 'height': 864})
+            worksheet.insert_chart('D2', chart)
+    print("学科上线分数对比各校分布图")
