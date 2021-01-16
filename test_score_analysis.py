@@ -997,31 +997,36 @@ class Score_situaiton:
 
     def rank(self):
         rank_dict = {}
-        score_block = []
-        for x in range(0, 100, 5):
-            score_block.append("[{}, {})".format(str(x), str(x+5)))
-        score_block.append("[100, *]")
-        score_block.reverse()
-        score_block.append("人数")
+        score_block_all = []
+        for x in range(7):
+            full_score = FULL_SCORE[x]
+            score_block = []
+            for y in range(0, full_score, int(full_score*0.1)):
+                score_block.append("[{}, {})".format(str(y), str(int(y + full_score*0.1))))
+            score_block.append("[{}, *]".format(full_score))
+            score_block.reverse()
+            score_block.append("人数")
+            score_block_all.append(score_block)
 
         for score in self.score_list[1:8]:
             index = self.score_list.index(score) - 1
             subject_name = SUBJECT_LIST[index]
+            full_score = FULL_SCORE[index]
 
-            subject_dict = {"分数段": score_block}
+            subject_dict = {"分数段": score_block_all[index]}
 
             for school in self.school_name:
                 school_data = []
                 this_school = self.score.groupby("学校").get_group(school)
 
-                for x in range(0, 100, 5):
+                for x in range(0, full_score, int(full_score*0.1)):
                     left_bound = this_school.where(this_school[score] >= x).dropna()
-                    right_bound = left_bound.where(left_bound[score] >= x+5).dropna()
+                    right_bound = left_bound.where(left_bound[score] < x+full_score*0.1).dropna()
                     if len(right_bound) == 0:
                         school_data.append(np.nan)
                     else:
                         school_data.append(len(right_bound))
-                left_bound = this_school.where(this_school[score] >= 100).dropna()
+                left_bound = this_school.where(this_school[score] >= full_score).dropna()
                 if len(left_bound) == 0:
                     school_data.append(np.nan)
                 else:
@@ -1034,6 +1039,46 @@ class Score_situaiton:
             rank_dict[subject_name] = subject_df
 
         return rank_dict
+
+    def sorted_rank(self):
+        all = {}
+        rank_block = ["[*, 10]", "[*, 30]", "[*, 50]", "[*, 100]", "[*, 200]", "[*, 300]", "[*, 500]", "[*, 1000]",
+                      "人数", "最高分", "最低分"]
+        blocks = [10, 30, 50, 100, 200, 300, 500, 1000]
+
+        for score in self.score_list[1:8]:
+            subject_dict = {}
+
+            index = self.score_list.index(score) - 1
+            subject_name = SUBJECT_LIST[index]
+            full_score = FULL_SCORE[index]
+
+            this_subject = self.score[['学校', score]].sort_values(by=score, ascending=False)
+
+            subject_dict["名次段"] = rank_block
+
+            for school in self.school_name:
+                subject_dict[school] = []
+
+            for x in blocks:
+                interval = this_subject[0:x]
+                for school in self.school_name:
+                    if school in interval["学校"].values:
+                        this_school = interval.groupby("学校").get_group(school)
+                        subject_dict[school].append(len(this_school))
+                    else:
+                        subject_dict[school].append(np.nan)
+
+            for school in self.school_name:
+                this_school = self.score.groupby("学校").get_group(school)
+                subject_dict[school].append(len(this_school))
+                subject_dict[school].append(this_school[score].max())
+                subject_dict[school].append(this_school[score].min())
+
+            subject_df = pd.DataFrame(subject_dict)
+            all[subject_name] = subject_df
+
+        return all
 
 
 class Analysis:
@@ -1568,8 +1613,8 @@ if __name__ == "__main__":
     target_output = {}
     structure_summary = {}
     export_data_path = "D:/Data/app/output/"
-    difficulty_curve_data_path = "D:/Data/app/output/分段难度曲线/"
-    diff_and_dist_distribution = "D:/Data/app/output/试题难度与区分度分布/"
+    difficulty_curve_data_path = "D:/Data/app/output/2-1-3-9分段难度曲线/"
+    diff_and_dist_distribution = "D:/Data/app/output/2-1-3-6试题难度与区分度分布/"
     if not os.path.exists(export_data_path):
         os.makedirs(export_data_path)
     if not os.path.exists(difficulty_curve_data_path):
@@ -1597,14 +1642,20 @@ if __name__ == "__main__":
     print("科目得分情况计算完成\n")
 
     situation = Score_situaiton(SCHOOL_NAME, TOTAL_SCORE)
+    subject_sorted_rank = situation.sorted_rank()
+    print("全区前N名各校分布及名单（科目）计算完成")
     situ_stats = situation.statistics()
-    print("各学校得分情况（科目）计算完成\n")
+    print("各学校得分情况（科目）计算完成")
     score_rate = situation.score_rate()
-    print("各学校得分率分布图（科目）计算完成\n")
+    print("各学校得分率分布图（科目）计算完成")
     subject_score_block = situation.rank()
-    print("各校分数段人数统计计算完成（科目）")
+    print("各校分数段人数统计（科目）计算完成\n")
 
-    with pd.ExcelWriter(export_data_path+"学校得分率分布图（科目）.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1-4-5全区前N名各校分布及名单（科目）.xlsx", engine='xlsxwriter') as writer:
+        for subject in subject_sorted_rank.keys():
+            subject_sorted_rank[subject].to_excel(writer, index=False, sheet_name=subject)
+
+    with pd.ExcelWriter(export_data_path+"2-1-4-1-3学校得分率分布图（科目）.xlsx", engine='xlsxwriter') as writer:
         for each in score_rate.keys():
             score_rate[each].to_excel(writer, index=False, sheet_name=each)
             workbook = writer.book
@@ -1630,6 +1681,7 @@ if __name__ == "__main__":
     with pd.ExcelWriter(export_data_path+"2-1-4-3各校分数段人数统计.xlsx", engine='xlsxwriter') as writer:
         for subject in subject_score_block.keys():
             subject_score_block[subject].to_excel(writer, index=False, sheet_name=subject)
+    print("各校分数段人数统计输出完成（科目）")
 
     for x in range(0, 7):
         subject = Exam(ITEM_SCORE, SUBJECT_TOTAL_LIST[x], SUBJECT_PROB_TOTAL[x], SUBJECT_LIST[x], FULL_SCORE[x])
@@ -1725,7 +1777,7 @@ if __name__ == "__main__":
             worksheet.insert_chart('N2', chart)
     print("题目指标输出完成")
 
-    with pd.ExcelWriter(export_data_path+"2-1概况.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(export_data_path+"2-1-0-0概况.xlsx", engine='xlsxwriter') as writer:
         for summary in summary_output.keys():
             summary_output[summary].to_excel(writer, sheet_name=summary, index=False)
     print("概括输出完成")
