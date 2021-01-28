@@ -4,15 +4,14 @@ import numpy as np
 
 
 class Analysis:
-    def __init__(self, subject_name, Class_name, subject_full_score,
+    def __init__(self, subject_name, school_name, subject_full_score,
                  subject_prob_total, subject_total, item_score,
                  student_total, subject_total_score, subject_index):
         item_score = item_score.groupby(item_score.sjmc).get_group(subject_name)
         self.item_score = item_score
         self.student_total = student_total
         self.subject_total_score = subject_total_score
-        self.Class_name = Class_name
-        self.subject_prob_total = subject_prob_total
+        self.school_name = school_name
 
         difficulty_curve_block = []
         for interval in range(0, 10, 1):
@@ -80,6 +79,7 @@ class Analysis:
 
         self.subject_total = subject_total
         self.subject_sorted = subject_sorted
+        self.subject_prob_total = subject_prob_total
         self.subject_sorted_reverse = subject_sorted_reverse
 
         self.boundary = boundary
@@ -98,7 +98,7 @@ class Analysis:
         low_group = self.low_group
 
         stu_num = self.stu_num
-        Class_name = self.Class_name
+        school_name = self.school_name
 
         test_difficulty = self.difficulty
 
@@ -160,10 +160,18 @@ class Analysis:
                 high_group_boundary = subject_full_score * (interval / 10) + 1
             block = subject_sorted_reverse.where(subject_sorted_reverse <= low_group_boundary).dropna()
             block = block.where(block > high_group_boundary).dropna()
+            block_sorted = block.sort_values(ascending=False)
             if len(block) == 0:
                 ave = 0
             else:
-                ave = block.mean()
+                inner_boundary = int(np.round(len(block_sorted.index) * 0.27))
+                inner_high_group = block_sorted.head(inner_boundary)
+                inner_low_group = block_sorted.tail(inner_boundary)
+
+                high_group_ave = inner_high_group.mean()
+                low_group_ave = inner_low_group.mean()
+                ave = (high_group_ave + low_group_ave) / 2
+
             difficulty = np.round(ave / subject_full_score, 2)
             difficulty_list.append(difficulty)
 
@@ -244,6 +252,7 @@ class Analysis:
                 group_ave = (high_group_ave + low_group_ave) / 2
                 sub_difficulty = np.round(group_ave / highest, 2)
                 sub_analysis["难度"].append(sub_difficulty)
+
                 if 0 <= sub_difficulty < 0.2:
                     diff_sub_num[0] += 1
                     diff_sub_score[0] += highest
@@ -324,10 +333,17 @@ class Analysis:
                         high_group_boundary = subject_full_score * (interval / 10) + 1
                     block = subject_sorted_reverse.where(subject_sorted_reverse['全卷'] <= low_group_boundary).dropna()
                     block = block.where(block['全卷'] > high_group_boundary).dropna()
+                    block_sorted = block.sort_values(by=['全卷'], ascending=False)
                     if len(block) == 0:
                         ave = 0
                     else:
-                        ave = block[prob_name].mean()
+                        inner_boundary = int(np.round(len(block_sorted.index) * 0.27))
+                        inner_high_group = block_sorted.head(inner_boundary)
+                        inner_low_group = block_sorted.tail(inner_boundary)
+
+                        high_group_ave = inner_high_group[prob_name].mean()
+                        low_group_ave = inner_low_group[prob_name].mean()
+                        ave = (high_group_ave + low_group_ave) / 2
                     difficulty = np.round(ave / highest, 2)
                     difficulty_list.append(difficulty)
 
@@ -504,10 +520,17 @@ class Analysis:
                         high_group_boundary = subject_full_score * (interval / 10) + 1
                     block = subject_sorted_reverse.where(subject_sorted_reverse['全卷'] <= low_group_boundary).dropna()
                     block = block.where(block['全卷'] > high_group_boundary).dropna()
+                    block_sorted = block.sort_values(by=['全卷'], ascending=False)
                     if len(block) == 0:
                         ave = 0
                     else:
-                        ave = block[prob_name].mean()
+                        inner_boundary = int(np.round(len(block_sorted.index) * 0.27))
+                        inner_high_group = block_sorted.head(inner_boundary)
+                        inner_low_group = block_sorted.tail(inner_boundary)
+
+                        high_group_ave = inner_high_group[prob_name].mean()
+                        low_group_ave = inner_low_group[prob_name].mean()
+                        ave = (high_group_ave + low_group_ave) / 2
                     difficulty = np.round(ave / highest, 2)
                     difficulty_list.append(difficulty)
 
@@ -532,7 +555,7 @@ class Analysis:
             all_prob_analysis["预估难度"] = subject_prob_total["预估难度"]
         prob_analysis_df = pd.DataFrame(all_prob_analysis)
 
-        output_dict = {"2-1-3-1各题目指标": prob_analysis_df}  # , "2-1-3-9全卷及各题难度曲线图": difficulty_curve
+        output_dict = {"2-1-3-1各题目指标": prob_analysis_df, "2-1-3-9全卷及各题难度曲线图": difficulty_curve}
 
         summary = self.summary_analysis(test_difficulty, all_prob_analysis["区分度"],
                                         subject_total_score, subject_full_score, subject_index)
@@ -540,7 +563,7 @@ class Analysis:
 
         for diff_total_score_index in range(5):
             rate = diff_total_score[diff_total_score_index] / subject_full_score
-            diff_rate[diff_total_score_index] = np.round(rate * 100, 2)
+            diff_rate[diff_total_score_index] = np.round(rate*100, 2)
         diff_distribution = self.diff_analysis(diff_sub_num, diff_sub_score, diff_sub_name,
                                                diff_obj_num, diff_obj_score, diff_obj_name,
                                                diff_total_num, diff_total_score, diff_rate)
@@ -548,7 +571,7 @@ class Analysis:
 
         for dist_total_score_index in range(4):
             rate = dist_total_score[dist_total_score_index] / subject_full_score
-            dist_rate[dist_total_score_index] = np.round(rate * 100, 2)
+            dist_rate[dist_total_score_index] = np.round(rate*100, 2)
         dist_distribution = self.dist_analysis(dist_sub_num, dist_sub_score, dist_sub_name,
                                                dist_obj_num, dist_obj_score, dist_obj_name,
                                                dist_total_num, dist_total_score, dist_rate)
@@ -560,9 +583,9 @@ class Analysis:
                                         test_structure_score_rate)
         output_dict["2-1-2-4题型分析"] = test_structure
 
-        subject_score_analysis = self.subject_score_analysis(Class_name, subject_total_score,
-                                                             subject_full_score, subject_index)
-        output_dict["2-1-4-1各班级得分情况"] = subject_score_analysis
+        subject_score_analysis = self.subject_score_analysis(school_name, subject_total_score, subject_full_score,
+                                                             subject_index)
+        output_dict["2-1-4-1各学校得分情况"] = subject_score_analysis
 
         if subject_index == 0:
             subject = '分数'
@@ -578,10 +601,10 @@ class Analysis:
         output_dict["科目后十名"] = last_ten
 
         score_segment_analysis = self.score_segment_analysis(subject_full_score,
-                                                             subject_total_score, Class_name, subject)
+                                                             subject_total_score, school_name, subject)
         output_dict["2-1-4-3各分数段人数统计"] = score_segment_analysis
 
-        ranked_score_segment_analysis = self.ranked_score_segment_analysis(Class_name, subject_total_score, subject)
+        ranked_score_segment_analysis = self.ranked_score_segment_analysis(school_name, subject_total_score, subject)
         output_dict["2-1-4-5全区前N名各校分布"] = ranked_score_segment_analysis
 
         return output_dict
@@ -660,51 +683,51 @@ class Analysis:
         structure_df = pd.DataFrame(structure_dict)
         return structure_df
 
-    def subject_score_analysis(self, Class_name, subject_total_score, subject_full_score, subject_index):
-        subject_score_analysis = {"班级": Class_name, "总人数": [], "最高分": [], "最低分": [],
+    def subject_score_analysis(self, school_name, subject_total_score, subject_full_score, subject_index):
+        subject_score_analysis = {"学校": school_name, "总人数": [], "最高分": [], "最低分": [],
                                   "全体平均分": [], "高分段平均分": [], "低分段平均分": [],
                                   "标准差": [], "满分率": [], "超优率": [], "优秀率": [],
                                   "良好率": [], "及格率": [], "低分率": [], "超均率": [],
                                   "比均率": [], "难度": [], "得分率": [], "单科与总分的相关系数": []}
-        for Class in Class_name:
+        for school in school_name:
             subject_list = list(subject_total_score.columns)
             this_subject = subject_list[subject_index + 1]
             total_ave = subject_total_score[this_subject].mean()
-            if Class == "全校":
-                this_Class = subject_total_score[[this_subject, '分数.7']]
-                this_Class_score = this_Class
+            if school == "全体":
+                this_school = subject_total_score[[this_subject, '分数.7']]
+                this_school_score = this_school
             else:
-                this_Class = subject_total_score.groupby("班级").get_group(Class)
-                this_Class_score = this_Class[[this_subject, '分数.7']]
+                this_school = subject_total_score.groupby("学校").get_group(school)
+                this_school_score = this_school[[this_subject, '分数.7']]
 
-            score_sorted = this_Class[this_subject].sort_values(ascending=False)
-            Class_boundary = int(np.round(len(score_sorted) * 0.27, 0))
-            high_group = score_sorted.head(Class_boundary)
-            low_group = score_sorted.tail(Class_boundary)
+            score_sorted = this_school[this_subject].sort_values(ascending=False)
+            school_boundary = int(np.round(len(score_sorted) * 0.27, 0))
+            high_group = score_sorted.head(school_boundary)
+            low_group = score_sorted.tail(school_boundary)
 
             high_ave = high_group.mean()
             subject_score_analysis["高分段平均分"].append(np.round(high_ave, 2))
             low_ave = low_group.mean()
             subject_score_analysis["低分段平均分"].append(np.round(low_ave, 2))
 
-            correlation_list = this_Class_score.corr()
+            correlation_list = this_school_score.corr()
             correlation = np.round(correlation_list[this_subject][1], 4)
             subject_score_analysis["单科与总分的相关系数"].append(correlation)
 
-            Class_stu_num = len(score_sorted)
-            subject_score_analysis["总人数"].append(Class_stu_num)
+            school_stu_num = len(score_sorted)
+            subject_score_analysis["总人数"].append(school_stu_num)
 
-            Class_max = score_sorted.max()
-            subject_score_analysis["最高分"].append(np.round(Class_max, 2))
+            school_max = score_sorted.max()
+            subject_score_analysis["最高分"].append(np.round(school_max, 2))
 
-            Class_min = score_sorted.min()
-            subject_score_analysis["最低分"].append(np.round(Class_min, 2))
+            school_min = score_sorted.min()
+            subject_score_analysis["最低分"].append(np.round(school_min, 2))
 
-            Class_ave = score_sorted.mean()
-            subject_score_analysis["全体平均分"].append(np.round(Class_ave, 2))
+            school_ave = score_sorted.mean()
+            subject_score_analysis["全体平均分"].append(np.round(school_ave, 2))
 
-            Class_std = score_sorted.std()
-            subject_score_analysis["标准差"].append(np.round(Class_std, 2))
+            school_std = score_sorted.std()
+            subject_score_analysis["标准差"].append(np.round(school_std, 2))
 
             rate_list = ["满分率", "超优率", "优秀率", "良好率", "及格率"]
             for interval in range(10, 5, -1):
@@ -714,28 +737,28 @@ class Analysis:
                     rate_num = len(score_sorted.where(score_sorted == subject_full_score * rate_coefficient).dropna())
                 else:
                     rate_num = len(score_sorted.where(score_sorted >= subject_full_score * rate_coefficient).dropna())
-                rate = np.round(rate_num / Class_stu_num * 100, 2)
+                rate = np.round(rate_num / school_stu_num * 100, 2)
                 rate_name = rate_list[rate_index]
                 subject_score_analysis[rate_name].append(rate)
 
             rate_num = len(score_sorted.where(score_sorted < subject_full_score * 0.4).dropna())
-            rate = np.round(rate_num / Class_stu_num * 100, 2)
+            rate = np.round(rate_num / school_stu_num * 100, 2)
             subject_score_analysis["低分率"].append(rate)
 
-            if Class == "全校":
+            if school == "全体":
                 subject_score_analysis["比均率"].append(np.nan)
                 subject_score_analysis["超均率"].append(np.nan)
             else:
-                on_ave_rate = Class_ave / total_ave * 100
+                on_ave_rate = school_ave / total_ave * 100
                 over_ave_rate = on_ave_rate - 100
                 subject_score_analysis["比均率"].append(np.round(on_ave_rate, 2))
                 subject_score_analysis["超均率"].append(np.round(over_ave_rate, 2))
 
-            Class_difficulty = Class_ave / subject_full_score
-            subject_score_analysis["难度"].append(np.round(Class_difficulty, 2))
+            school_difficulty = school_ave / subject_full_score
+            subject_score_analysis["难度"].append(np.round(school_difficulty, 2))
 
-            Class_score_rate = Class_difficulty * 100
-            subject_score_analysis["得分率"].append(np.round(Class_score_rate, 2))
+            school_score_rate = school_difficulty * 100
+            subject_score_analysis["得分率"].append(np.round(school_score_rate, 2))
 
         subject_score_analysis_df = pd.DataFrame(subject_score_analysis)
         return subject_score_analysis_df
@@ -770,7 +793,7 @@ class Analysis:
         last_ten = last_ten.iloc[::-1]
         return last_ten
 
-    def score_segment_analysis(self, subject_full_score, subject_total_score, Class_name, subject):
+    def score_segment_analysis(self, subject_full_score, subject_total_score, school_name, subject):
         score_segment = []
         for interval in range(0, subject_full_score, int(subject_full_score * 0.1)):
             score_segment.append("[{}, {})".format(str(interval), str(int(interval + subject_full_score * 0.1))))
@@ -779,49 +802,50 @@ class Analysis:
         score_segment.append("人数")
 
         segment_dict = {"分数段": score_segment}
-        for Class in Class_name[:-1]:
-            this_Class_data = []
-            this_Class = subject_total_score.groupby("班级").get_group(Class)
+        for school in school_name[:-1]:
+            this_school_data = []
+            this_school = subject_total_score.groupby("学校").get_group(school)
 
             for interval in range(0, subject_full_score, int(subject_full_score * 0.1)):
-                high_group = this_Class.where(this_Class[subject] >= interval).dropna()
+                high_group = this_school.where(this_school[subject] >= interval).dropna()
                 low_group = high_group.where(high_group[subject] < interval + subject_full_score * 0.1).dropna()
                 if len(low_group) == 0:
-                    this_Class_data.append(np.nan)
+                    this_school_data.append(np.nan)
                 else:
-                    this_Class_data.append(len(low_group))
-            high_group = this_Class.where(this_Class[subject] >= subject_full_score).dropna()
+                    this_school_data.append(len(low_group))
+            high_group = this_school.where(this_school[subject] >= subject_full_score).dropna()
             if len(high_group) == 0:
-                this_Class_data.append(np.nan)
+                this_school_data.append(np.nan)
             else:
-                this_Class_data.append(len(high_group))
-            this_Class_data.reverse()
-            this_Class_data.append(len(this_Class))
-            segment_dict[Class] = this_Class_data
+                this_school_data.append(len(high_group))
+            this_school_data.reverse()
+            this_school_data.append(len(this_school))
+            segment_dict[school] = this_school_data
         segment_df = pd.DataFrame(segment_dict)
         return segment_df
 
-    def ranked_score_segment_analysis(self, Class_name, subject_total_score, subject):
+    def ranked_score_segment_analysis(self, school_name, subject_total_score, subject):
         rank_segment = ["[*, 10]", "[*, 30]", "[*, 50]", "[*, 100]", "[*, 200]", "[*, 300]", "[*, 500]", "[*, 1000]",
                         "人数", "最高分", "最低分"]
         segments = [10, 30, 50, 100, 200, 300, 500, 1000]
-        this_subject = subject_total_score[['班级', subject]].sort_values(by=subject, ascending=False)
+        this_subject = subject_total_score[['学校', subject]].sort_values(by=subject, ascending=False)
 
         ranked_dict = {"名次段": rank_segment}
 
-        for Class in Class_name[:-1]:
-            ranked_dict[Class] = []
+        for school in school_name[:-1]:
+            ranked_dict[school] = []
             for segment in segments:
                 student = this_subject[0:segment]
-                if Class in student["班级"].values:
-                    this_Class = student.groupby("班级").get_group(Class)
-                    ranked_dict[Class].append(len(this_Class))
+                if school in student["学校"].values:
+                    this_school = student.groupby("学校").get_group(school)
+                    ranked_dict[school].append(len(this_school))
                 else:
-                    ranked_dict[Class].append(np.nan)
-            this_Class = subject_total_score.groupby("班级").get_group(Class)
-            ranked_dict[Class].append(len(this_Class))
-            ranked_dict[Class].append(this_Class[subject].max())
-            ranked_dict[Class].append(this_Class[subject].min())
+                    ranked_dict[school].append(np.nan)
+            this_school = subject_total_score.groupby("学校").get_group(school)
+            ranked_dict[school].append(len(this_school))
+            ranked_dict[school].append(this_school[subject].max())
+            ranked_dict[school].append(this_school[subject].min())
 
         ranked_df = pd.DataFrame(ranked_dict)
         return ranked_df
+

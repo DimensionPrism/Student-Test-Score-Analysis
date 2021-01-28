@@ -13,6 +13,8 @@ class Analysis:
 
         self.subject_total_score = subject_total_score
 
+        self.score_line = pd.read_excel("./OUTPUT/全区/2-2-2总分及各科上线的有效分数线.xlsx")
+
     def sector_output(self):
 
         Class_name = self.Class_name
@@ -38,7 +40,7 @@ class Analysis:
         total_score_line_analysis = self.total_score_line_analysis(Class_name, subject_total_score)
         output_dict["1-4总分上线人数（目标1-5）"] = total_score_line_analysis
 
-        score_line = self.score_line(subject_total_score, subject_list)
+        score_line = self.score_line
         output_dict["2-2-2总分及各科上线的有效分数线"] = score_line
 
         return output_dict
@@ -240,33 +242,6 @@ class Analysis:
                 rate = np.round(num / stu_num, 2)
                 score_line_dict[append_name_num].append(num)
                 score_line_dict[append_name_rate].append(rate)
-
-        score_line_df = pd.DataFrame(score_line_dict)
-        return score_line_df
-
-    def score_line(self, subject_total_score, subject_list):
-        total_score_line_list = [562, 508, 449, 382, 314]
-        score_line_dict = {"总分上线分数": total_score_line_list}
-
-        for subject in subject_list[:-1]:
-            score_line_dict[subject+"上线分数"] = []
-
-        for index in range(5):
-            score_line = total_score_line_list[index]
-            student = subject_total_score.where(subject_total_score['分数.7'] >= score_line).dropna()
-            stu_ave = student['分数.7'].mean()
-            score_line_coefficient = score_line / stu_ave
-
-            for suffix in range(7):
-                if suffix == 0:
-                    subject_name = '分数'
-                else:
-                    subject_name = '分数.{}'.format(suffix)
-
-                subject_ave = student[subject_name].mean()
-                subject_effective_score = np.round(subject_ave * score_line_coefficient, 1)
-                append_name = subject_list[suffix]+"上线分数"
-                score_line_dict[append_name].append(subject_effective_score)
 
         score_line_df = pd.DataFrame(score_line_dict)
         return score_line_df
