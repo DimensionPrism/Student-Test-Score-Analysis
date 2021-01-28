@@ -1,6 +1,7 @@
 # Student-Test-Score-Analysis
-Base on the analysis of student test score(7 subjects: Chinese, Math, English, History, Physics, Chemistry, Politics), calculate scoring indices and export to excels
-根据不同指标进行计算并将结果输出为多个Excel 
+Base on the analysis of student test score(7 subjects: Chinese, Math, English, History, Physics, Chemistry, Politics), calculate scoring indices and export to excels (Every subject will have their own analysis. Every school will have the subject analysis for this school. A overall analysis for all school and every school will have a overall analysis for all of the classes in that school.）
+
+根据不同指标进行计算并将结果输出为多个Excel（对每个学科进行分析，对每个学校的学科得分情况进行分析，对所有学校进行整体分析，对每个学校进行整体分析）
 
 Indices: Average, Rank, Percentile, Standard Deviation, Variance, Coefficient of Variance, Extreme Excellent Rate(over 90%), Excellent Rate(over 80%), Good Rate(over 70%), Passing Rate(over 60%), Low Score Rate(less than 40%), General Passing Rate(need to pass every subject), Score Rate(How many students get this question right), Difficulty, Discrimination Index, Reliability, Validity, Median, Mode, Range, Z-score, T-score, Effective Score
 
