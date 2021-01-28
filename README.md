@@ -1,5 +1,4 @@
-# Student-Test-Score-Analysis
-Base on the analysis of student test score(7 subjects: Chinese, Math, English, History, Physics, Chemistry, Politics), calculate scoring indices and export to excels (Every subject will have their own analysis. Every school will have the subject analysis for this school. A overall analysis for all school and every school will have a overall analysis for all of the classes in that school.）
+Base on the analysis of student test scores (7 subjects: Chinese, Math, English, History, Physics, Chemistry, Politics), calculate scoring indices and export to excels (Every subject will have their own analysis. Every school will have the subject analysis for this school. Overall analysis for all schools and every school will have an overall analysis for all of the classes in that school.）
 
 根据不同指标进行计算并将结果输出为多个Excel（对每个学科进行分析，对每个学校的学科得分情况进行分析，对所有学校进行整体分析，对每个学校进行整体分析）
 
